@@ -135,5 +135,3 @@ The bot will display the names of the monitored channels, their IDs, and the Dis
 - The bot checks for new videos at regular intervals defined by `checkInterval` (in milliseconds).
 - Notifications include an embed displaying the video title, its link, the publication date, and the channel ID.
 - If a notification channel is not defined for a channel, an error will be logged in the console.
-
-t
