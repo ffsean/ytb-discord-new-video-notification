@@ -1,4 +1,4 @@
-// index.js : Main bot file
+// index.js: Main bot file
 
 const fs = require("fs");
 const path = require("path");
@@ -6,13 +6,13 @@ const { Client, GatewayIntentBits, Partials, EmbedBuilder, Collection, MessageFl
 const Parser = require("rss-parser");
 const parser = new Parser();
 
-// Chargement de la configuration
+// Loading the configuration
 const configPath = path.join(__dirname, "config.json");
 const config = JSON.parse(fs.readFileSync(configPath));
 
 const dataPath = path.join(__dirname, "data", "channels.json");
 
-// Fonction utilitaire pour charger la configuration dynamique
+// Utility function to load dynamic configuration
 function loadData() {
   if (!fs.existsSync(dataPath)) {
     return { youtubeChannels: {} };
@@ -27,14 +27,14 @@ function loadData() {
   try {
     return JSON.parse(fileContent);
   } catch (error) {
-    console.error("Erreur lors du parsing JSON dans loadData :", error);
+    console.error("Error parsing JSON in loadData:", error);
     return { youtubeChannels: {} };
   }
 }
 
-// Fonction utilitaire pour sauvegarder la configuration dynamique
+// Utility function to save dynamic configuration
 function saveData(data) {
-  // S'assurer que le dossier 'data' existe
+  // Ensure that the 'data' folder exists
   const directory = path.dirname(dataPath);
   if (!fs.existsSync(directory)) {
     fs.mkdirSync(directory, { recursive: true });
@@ -42,7 +42,7 @@ function saveData(data) {
   fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
 }
 
-// Création du client Discord
+// Create the Discord client
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
   partials: [Partials.Channel]
@@ -50,62 +50,62 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// Définition des commandes slash mises à jour
+// Definition of updated slash commands
 const commands = [
   {
     name: "addyoutube",
-    description: "Ajoute une chaîne YouTube à surveiller et définit son salon de notifications",
+    description: "Add a YouTube channel to monitor and set its notification channel",
     options: [
       {
         name: "channel_id",
         type: 3, // STRING
-        description: "L'identifiant de la chaîne YouTube",
+        description: "The YouTube channel ID",
         required: true
       },
       {
         name: "discord_channel",
         type: 7, // CHANNEL
-        description: "Salon Discord pour notifications (optionnel)",
+        description: "Discord channel for notifications (optional)",
         required: false
       }
     ]
   },
   {
     name: "removeyoutube",
-    description: "Supprime une chaîne YouTube de la surveillance",
+    description: "Remove a YouTube channel from monitoring",
     options: [
       {
         name: "channel_id",
         type: 3, // STRING
-        description: "L'identifiant de la chaîne YouTube à supprimer",
+        description: "The ID of the YouTube channel to remove",
         required: true
       }
     ]
   },
   {
     name: "listyoutube",
-    description: "Liste les chaînes YouTube actuellement surveillées"
+    description: "List the currently monitored YouTube channels"
   }
 ];
 
-// Dès que le bot est prêt
+// Once the bot is ready
 client.once("ready", async () => {
-  console.log(`Connecté en tant que ${client.user.tag}`);
+  console.log(`Logged in as ${client.user.tag}`);
 
-  // Enregistrement des commandes dans le serveur (guild)
+  // Register commands in the guild (server)
   const guild = client.guilds.cache.get(config.guildId);
   if (guild) {
     await guild.commands.set(commands);
-    console.log("Commandes slash enregistrées dans le serveur.");
+    console.log("Slash commands registered in the server.");
   } else {
-    console.error("Le guildId indiqué dans config.json est invalide.");
+    console.error("The guildId specified in config.json is invalid.");
   }
 
-  // Lancement de la vérification périodique des chaînes
+  // Start periodic checking of the channels
   setInterval(checkYouTubeChannels, config.checkInterval);
 });
 
-// Gestion des interactions slash
+// Handling slash interactions
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isCommand()) return;
 
@@ -113,35 +113,35 @@ client.on("interactionCreate", async (interaction) => {
 
   if (interaction.commandName === "addyoutube") {
     const ytChannelId = interaction.options.getString("channel_id");
-    // Récupère le salon fourni ou utilise celui de la commande
+    // Retrieve the provided channel or use the one from the command
     const discordChannel = interaction.options.getChannel("discord_channel") || interaction.channel;
 
     if (data.youtubeChannels[ytChannelId]) {
-      return interaction.reply({ content: "Cette chaîne est déjà surveillée.", flags: MessageFlags.EPHEMERAL });
+      return interaction.reply({ content: "This YouTube channel is already being monitored.", flags: MessageFlags.EPHEMERAL });
     }
 
     try {
-      // Récupération du flux RSS pour obtenir le nom de la chaîne et la date de la dernière vidéo
+      // Retrieve the RSS feed to get the channel name and the date of the last video
       const feed = await parser.parseURL(`https://www.youtube.com/feeds/videos.xml?channel_id=${ytChannelId}`);
       let lastPubDate = "";
       if (feed.items && feed.items.length > 0) {
         lastPubDate = feed.items[0].pubDate;
       }
-      // Stockage des informations avec le salon où la commande est exécutée par défaut
+      // Store the information using the channel where the command was executed by default
       data.youtubeChannels[ytChannelId] = {
         lastVideoDate: lastPubDate,
-        title: feed.title || "Nom non disponible",
+        title: feed.title || "Name not available",
         notifChannel: discordChannel.id
       };
       saveData(data);
       return interaction.reply({
-        content: `Chaîne YouTube **${feed.title || ytChannelId}** ajoutée avec succès ! Les notifications seront envoyées dans ${discordChannel}.`,
+        content: `YouTube channel **${feed.title || ytChannelId}** successfully added! Notifications will be sent in ${discordChannel}.`,
         flags: MessageFlags.EPHEMERAL
       });
     } catch (error) {
       console.error(error);
       return interaction.reply({
-        content: "Impossible d'ajouter la chaîne. Vérifiez l'ID ou réessayez plus tard.",
+        content: "Unable to add the channel. Please check the channel ID or try again later.",
         flags: MessageFlags.EPHEMERAL
       });
     }
@@ -151,30 +151,30 @@ client.on("interactionCreate", async (interaction) => {
     const ytChannelId = interaction.options.getString("channel_id");
 
     if (!data.youtubeChannels[ytChannelId]) {
-      return interaction.reply({ content: "Cette chaîne n'est pas surveillée.", flags: MessageFlags.EPHEMERAL });
+      return interaction.reply({ content: "This YouTube channel is not being monitored.", flags: MessageFlags.EPHEMERAL });
     }
 
     delete data.youtubeChannels[ytChannelId];
     saveData(data);
-    return interaction.reply({ content: `Chaîne YouTube ${ytChannelId} supprimée.`, flags: MessageFlags.EPHEMERAL });
+    return interaction.reply({ content: `YouTube channel ${ytChannelId} removed.`, flags: MessageFlags.EPHEMERAL });
   }
 
   if (interaction.commandName === "listyoutube") {
     const ytChannels = Object.entries(data.youtubeChannels);
     if (ytChannels.length === 0) {
-      return interaction.reply({ content: "Aucune chaîne n'est actuellement surveillée.", flags: MessageFlags.EPHEMERAL });
+      return interaction.reply({ content: "No YouTube channel is currently being monitored.", flags: MessageFlags.EPHEMERAL });
     }
-    let response = `Chaînes surveillées (${ytChannels.length}) :\n`;
+    let response = `Monitored YouTube channels (${ytChannels.length}):\n`;
     ytChannels.forEach(([id, info]) => {
-      const title = info.title || "Nom inconnu";
-      const notifChannel = info.notifChannel ? `<#${info.notifChannel}>` : "Non défini";
-      response += `${title} (${id}) - Notifie dans : ${notifChannel}\n`;
+      const title = info.title || "Unknown name";
+      const notifChannel = info.notifChannel ? `<#${info.notifChannel}>` : "Not defined";
+      response += `${title} (${id}) - Notifications in: ${notifChannel}\n`;
     });
     return interaction.reply({ content: response, flags: MessageFlags.EPHEMERAL });
   }
 });
 
-// Fonction de vérification des chaînes YouTube
+// Function to check YouTube channels
 async function checkYouTubeChannels() {
   const data = loadData();
 
@@ -188,46 +188,46 @@ async function checkYouTubeChannels() {
       const lastStoredDate = channelData.lastVideoDate ? new Date(channelData.lastVideoDate) : null;
 
       if (!lastStoredDate || publishedDate > lastStoredDate) {
-        // Mise à jour de la dernière date connue
+        // Update the last known date
         data.youtubeChannels[ytChannelId].lastVideoDate = latestVideo.pubDate;
         saveData(data);
 
-        // Détermine le salon de notification à utiliser
+        // Determine the notification channel to use
         const notifChannelId = channelData.notifChannel || config.notificationChannel;
         if (!notifChannelId) {
-          console.error(`Aucun salon de notification défini pour la chaîne ${ytChannelId}`);
+          console.error(`No notification channel defined for channel ${ytChannelId}`);
           continue;
         }
 
         const discordChannel = await client.channels.fetch(notifChannelId).catch(() => null);
         if (!discordChannel) {
-          console.error("Salon de notification introuvable :", notifChannelId);
+          console.error("Notification channel not found:", notifChannelId);
           continue;
         }
         
-        // Crée l'embed de notification
+        // Create the notification embed
         const embed = new EmbedBuilder()
-          .setTitle(`Nouvelle vidéo de ${channelData.title}`)
+          .setTitle(`New video from ${channelData.title}`)
           .setDescription(latestVideo.title)
           .setColor(0xff0000)
           .setTimestamp(new Date(latestVideo.pubDate));
 
-        // Message contenant uniquement le lien brut (pour générer l'aperçu Discord)
+        // Message containing only the raw link (to generate Discord preview)
         const linkMessage = latestVideo.link;
 
-        // Envoi d'un seul message avec le lien en 'content' et l'embed
+        // Send a single message with the link as 'content' and the embed
         await discordChannel.send({
           content: linkMessage,
           embeds: [embed]
         });
 
-        console.log(`Nouvelle vidéo détectée sur ${channelData.title} : ${latestVideo.link}`);
+        console.log(`New video detected on ${channelData.title}: ${latestVideo.link}`);
       }
     } catch (error) {
-      console.error(`Erreur lors de la vérification de la chaîne ${ytChannelId}: `, error);
+      console.error(`Error checking channel ${ytChannelId}: `, error);
     }
   }
 }
 
-// Connexion du bot
-client.login(config.token); 
+// Log the bot in
+client.login(config.token);
