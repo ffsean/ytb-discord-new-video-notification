@@ -205,21 +205,8 @@ async function checkYouTubeChannels() {
           continue;
         }
         
-        // Create the notification embed
-        const embed = new EmbedBuilder()
-          .setTitle(`New video from ${channelData.title}`)
-          .setDescription(latestVideo.title)
-          .setColor(0xff0000)
-          .setTimestamp(new Date(latestVideo.pubDate));
-
-        // Message containing only the raw link (to generate Discord preview)
-        const linkMessage = latestVideo.link;
-
-        // Send a single message with the link as 'content' and the embed
-        await discordChannel.send({
-          content: linkMessage,
-          embeds: [embed]
-        });
+        const messageText = `New video from ${channelData.title}:\n${latestVideo.title}\n\nWatch it here: ${latestVideo.link}`;
+        await discordChannel.send(messageText);
 
         console.log(`New video detected on ${channelData.title}: ${latestVideo.link}`);
       }
