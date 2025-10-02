@@ -8,7 +8,20 @@ const parser = new Parser();
 
 // Loading the configuration
 const configPath = path.join(__dirname, "config.json");
-const config = JSON.parse(fs.readFileSync(configPath));
+let config = {};
+try {
+  config = JSON.parse(fs.readFileSync('./config.json'));
+} catch (err) {
+  console.log("No config.json found, using ENV variables instead.");
+  config = {
+    token: process.env.DISCORD_TOKEN,
+    clientId: process.env.CLIENT_ID,
+    guildId: process.env.GUILD_ID,
+    checkInterval: process.env.CHECK_INTERVAL || 60000
+  };
+}
+
+module.exports = config;
 
 const dataPath = path.join(__dirname, "data", "channels.json");
 
